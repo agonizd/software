@@ -1,6 +1,6 @@
 """
 test_recommender.py — C 模块单元测试
-运行: cd D:/work工作空间 && $env:PYTHONPATH="D:\\work工作空间"; python -m pytest recommender/tests/test_recommender.py -v
+运行: cd D:/Projects/software && $env:PYTHONPATH="D:\\Projects\\software"; python -m pytest recommend_engine/tests/test_recommender.py -v
 """
 
 import sys
@@ -14,8 +14,9 @@ from contracts import (
     HairLength, HairCurl, FaceFeatures,
     ALL_STYLE_DIMS,
 )
-from recommender.engine import recommend
-from recommender.reverse_infer import infer_style_vector, _infer_by_keywords
+from recommend_engine.engine import recommend
+from recommend_engine.reverse_infer import infer_style_vector, _infer_by_keywords
+
 
 
 # ─────────────────────────────────────────────────────────────

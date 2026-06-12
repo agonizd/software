@@ -23,7 +23,7 @@ from contracts import (
     FaceReport, StylePreferences, StyleVector,
     Hairstyle, Recommendation, FaceShape,
 )
-from recommender.scoring import (
+from recommend_engine.scoring import (
     calc_face_match, calc_style_similarity, calc_total_score,
 )
 
@@ -56,7 +56,7 @@ def recommend(
     # 1. 如果有自然语言但无向量 → 先反向推理
     sv = preferences.style_vector
     if sv is None and preferences.natural_language is not None:
-        from recommender.reverse_infer import infer_style_vector
+        from recommend_engine.reverse_infer import infer_style_vector
         sv = infer_style_vector(preferences.natural_language)
 
     # 2. 从 B 拉取候选发型
