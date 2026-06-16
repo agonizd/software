@@ -10,12 +10,13 @@
     - generate_style_report()        主入口，优先 LLM 生成，失败降级本地模板
     - _generate_report_with_llm()    使用 OpenAI GPT-3.5-turbo API 生成
     - _generate_report_local()       本地模板生成（不调 API）
+    - _generate_transfer_image()     用AI把推荐发型"换"到用户照片上（需要 OPENAI_API_KEY）
 
-  报告结构(6 章):
+  报告结构(6 章 + 可选效果图):
     一、脸型分析
     二、五官特点与发型暗示（Markdown 三线表）
     三、风格象限（6 维星级表）
-    四、推荐发型 Top-N
+    四、推荐发型 Top-N（可嵌入 AI 生成的发型迁移效果图）
     五、避雷提示
     六、日常打理建议
 
@@ -27,13 +28,14 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
 from typing import List, Optional, Dict
 
 # ── 导入 contracts ──────────────────────────────────────────────────
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, r"D:\buya\下载")
 from contracts import (  # type: ignore[import-untyped]
     FaceReport,
     FaceShape,
@@ -229,18 +231,84 @@ def _generate_report_with_llm(face_report: FaceReport, recommendations: List[Rec
 
 
 # ============================================================================
+#  发型迁移（AI 生成效果图）
+# ============================================================================
+
+def _generate_transfer_image(
+    user_photo_path: str,
+    hairstyle_desc: str,
+) -> Optional[str]:
+    """用 AI 把指定发型"换"到用户照片上，返回效果图的 base64 编码字符串。
+
+    调用 OpenAI gpt-image-1 模型（通过 images.generate 端点），
+    传入用户照片 + 发型描述，生成换发后的效果图。
+    失败返回 None，不影响报告整体生成。
+
+    Args:
+        user_photo_path: 用户正面照片的本地文件路径
+        hairstyle_desc: 发型描述（如"中分及肩波波头，自然黑色"）
+
+    Returns:
+        效果图的 base64 编码字符串（可直接嵌入 Markdown），失败返回 None
+    """
+    import openai
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("[信息] OPENAI_API_KEY 未配置，跳过发型迁移图像生成")
+        return None
+
+    if not os.path.exists(user_photo_path):
+        print(f"[警告] 用户照片不存在: {user_photo_path}")
+        return None
+
+    try:
+        client = openai.OpenAI(api_key=api_key)
+
+        with open(user_photo_path, "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+
+        prompt = (
+            f"Transform this person's hairstyle to: {hairstyle_desc}. "
+            "Keep the face, facial features, skin tone, and identity completely unchanged. "
+            "Only change the hair — style, length, color, and texture as described. "
+            "Photorealistic result, same lighting, pose, and background."
+        )
+
+        response = client.images.generate(
+            model="gpt-image-1",
+            prompt=prompt,
+            n=1,
+            quality="medium",
+            response_format="b64_json",
+        )
+
+        return response.data[0].b64_json
+
+    except Exception as e:
+        print(f"[警告] 发型迁移图像生成失败 ({hairstyle_desc}): {e}")
+        return None
+
+
+# ============================================================================
 #  本地模板报告生成
 # ============================================================================
 
-def _generate_report_local(face_report: FaceReport, recommendations: List[Recommendation]) -> str:
+def _generate_report_local(
+    face_report: FaceReport,
+    recommendations: List[Recommendation],
+    user_photo_path: str = "",
+) -> str:
     """本地模板生成风格报告（不调用 API）。
 
     根据 face_report 和 recommendations 的实际数据动态填充，
     生成完整的 6 章 Markdown 报告。
+    如果提供了 user_photo_path，会为每条推荐发型生成 AI 效果图并嵌入报告。
 
     Args:
         face_report: 脸型分析结果
         recommendations: 发型推荐列表
+        user_photo_path: 用户照片路径（可选，提供则生成换发效果图）
 
     Returns:
         Markdown 格式的风格报告字符串
@@ -337,13 +405,34 @@ def _generate_report_local(face_report: FaceReport, recommendations: List[Recomm
                 f"{reasons_text} |"
             )
 
-        chapter_4 = f"""## 四、推荐发型 Top-{len(top_recs)}
+        chapter_4_lines = [
+            f"## 四、推荐发型 Top-{len(top_recs)}",
+            "",
+            "| 排名 | 发型 | 匹配度 | 长度 | 卷度 | 理由 |",
+            "|:---:|------|:---:|:---:|:---:|------|",
+        ]
+        chapter_4_lines.extend(rec_rows)
+        chapter_4_lines.append("")
 
-| 排名 | 发型 | 匹配度 | 长度 | 卷度 | 理由 |
-|:---:|------|:---:|:---:|:---:|------|
-{chr(10).join(rec_rows)}
+        # ── 嵌入发型迁移效果图 ──
+        if user_photo_path and os.path.exists(user_photo_path):
+            for i, rec in enumerate(top_recs, 1):
+                desc = (
+                    f"{rec.hairstyle.name}（{rec.hairstyle.length.value}, "
+                    f"{rec.hairstyle.curl.value}）"
+                )
+                img_b64 = _generate_transfer_image(user_photo_path, desc)
+                if img_b64:
+                    chapter_4_lines.append(
+                        f"![{rec.hairstyle.name}效果图]"
+                        f"(data:image/png;base64,{img_b64})"
+                    )
+                    chapter_4_lines.append(
+                        f"> *AI 生成效果图 — {rec.hairstyle.name}，仅供参考，实际效果以发型师操作为准。*"
+                    )
+                    chapter_4_lines.append("")
 
-"""
+        chapter_4 = "\n".join(chapter_4_lines) + "\n"
     else:
         chapter_4 = """## 四、推荐发型 Top-0
 
@@ -423,28 +512,64 @@ def generate_style_report(
     face_report: FaceReport,
     recommendations: List[Recommendation],
     use_llm: bool = True,
+    user_photo_path: str = "",
 ) -> str:
     """根据脸型分析和发型推荐生成 Markdown 风格报告。
 
     优先使用 LLM（OpenAI GPT-3.5-turbo）生成高质量个性化报告，
     LLM 不可用时（API Key 未配置、网络异常等）自动降级为本地模板生成。
+    如果提供了 user_photo_path 且有 OPENAI_API_KEY，会在推荐发型章节
+    为每款发型自动生成 AI 换发效果图。
 
     Args:
         face_report: A 模块输出的脸型分析结果
         recommendations: C 模块输出的发型推荐列表（可为空）
         use_llm: 是否尝试 LLM 生成，默认 True
+        user_photo_path: 用户正面照片路径（可选），提供则嵌入 AI 换发效果图
 
     Returns:
         Markdown 格式的风格报告字符串
     """
     if use_llm:
         try:
-            return _generate_report_with_llm(face_report, recommendations)
+            report = _generate_report_with_llm(face_report, recommendations)
+            if user_photo_path and recommendations:
+                report = _embed_transfer_images(report, recommendations, user_photo_path)
+            return report
         except Exception:
-            # LLM 失败 → 降级本地模板
             pass
 
-    return _generate_report_local(face_report, recommendations)
+    return _generate_report_local(face_report, recommendations, user_photo_path)
+
+
+def _embed_transfer_images(
+    report: str,
+    recommendations: List[Recommendation],
+    user_photo_path: str,
+) -> str:
+    """在已有 Markdown 报告中为每条推荐嵌入效果图（供 LLM 报告的补充）。"""
+    if not user_photo_path or not os.path.exists(user_photo_path):
+        return report
+
+    for i, rec in enumerate(recommendations[:5], 1):
+        desc = f"{rec.hairstyle.name}（{rec.hairstyle.length.value}, {rec.hairstyle.curl.value}）"
+        img_b64 = _generate_transfer_image(user_photo_path, desc)
+        if img_b64:
+            img_block = (
+                f"\n![{rec.hairstyle.name}效果图]"
+                f"(data:image/png;base64,{img_b64})\n"
+                f"> *AI 生成效果图 — {rec.hairstyle.name}，仅供参考。*\n"
+            )
+            # 在推荐名称第一次出现的位置后面插入
+            marker = f"**{rec.hairstyle.name}**"
+            idx = report.find(marker)
+            if idx != -1:
+                # 找到该行末尾（下一个换行）
+                line_end = report.find("\n", idx)
+                if line_end != -1:
+                    report = report[:line_end + 1] + img_block + report[line_end + 1:]
+
+    return report
 
 
 # ============================================================================
@@ -474,18 +599,19 @@ def mock_generate_style_report_d(
 # ============================================================================
 
 if __name__ == "__main__":
-    """直接运行时测试 5 种场景。"""
+    """直接运行时测试场景。"""
 
     def _print_separator(title: str) -> None:
         print(f"\n{'=' * 70}")
         print(f"  {title}")
         print(f"{'=' * 70}\n")
 
-    # ── 场景 1：鹅蛋脸 + 甜美风 ──
+    # ── 场景 1：鹅蛋脸 + 甜美风（含换发效果图）──
     _print_separator("场景 1：鹅蛋脸 + 甜美风")
     report_oval = mock_detect_face_shape(face_shape=FaceShape.OVAL)
     preferences_sweet = StylePreferences(natural_language="日系甜美少女风")
     recs_oval = mock_recommend(report_oval, preferences_sweet, top_n=5)
+    # 如果有用户照片和 API key，自动生成换发效果图
     print(generate_style_report(report_oval, recs_oval, use_llm=False))
 
     # ── 场景 2：圆脸 + 干练风 ──
@@ -516,4 +642,5 @@ if __name__ == "__main__":
 
     print(f"\n{'=' * 70}")
     print("  全部 5 个场景测试完成")
+    print(f"  (如配置 OPENAI_API_KEY + user_photo_path，场景1会含换发效果图)")
     print(f"{'=' * 70}")
