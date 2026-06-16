@@ -11,6 +11,9 @@ import json
 import sys
 import os
 
+# 强制使用 Mock 模式（测试环境不需要真实模块）
+os.environ["HAIR_FORCE_MOCK"] = "1"
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from agent_app.tools import (

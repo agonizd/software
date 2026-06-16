@@ -7,25 +7,77 @@ tools.py — LangChain 工具包装层
 2. 输出是字符串（Agent 只能读 str）
 3. docstring 是 Agent 的"使用说明书"——它靠这个决定调哪个 tool
 
-Mock 优先策略：
-- 开发期：全部用 contracts.mock_* 函数（Day 1 就能跑）
-- 联调期：取消注释真实 import，注释掉 mock import
+动态导入策略：
+- 优先导入真实模块（各团队交付后自动生效）
+- 真实模块不可用时，fallback 到 contracts_mock 的 Mock 实现
 """
 
 import json
 import sys
 import os
+import importlib.util
 
-# ── Mock 模式（默认）──
-# 当团队成员还没交付时，用 contracts.py 里的 Mock 函数
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# ── 项目根目录 ──────────────────────────────────────────────────
+_PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _PROJ_ROOT)
 
+# 导入数据类（纯合约无依赖）
 from contracts import (
-    # 枚举
     FaceShape, HairLength, HairCurl,
-    # 数据类
     FaceReport, StyleVector, StylePreferences,
-    # Mock 函数（开发期用这些）
+)
+
+
+# ============================================================
+#  动态导入模块函数（真实 > Mock fallback）
+# ============================================================
+
+# 环境变量 FORCE_MOCK=1 强制使用所有 Mock 函数（测试/演示场景）
+_FORCE_MOCK = os.environ.get("HAIR_FORCE_MOCK", "").strip() == "1"
+
+def _try_import(module_path: str, *names: str):
+    """
+    尝试从 module_path 导入 names。
+    如果 FORCE_MOCK 或导入失败 → 返回 (False, None)
+    成功 → 返回 (True, tuple of objects)
+    """
+    if _FORCE_MOCK:
+        return (False, None)
+    try:
+        mod = importlib.import_module(module_path)
+        results = tuple(getattr(mod, n) for n in names)
+        return (True, results)
+    except (ImportError, AttributeError, ModuleNotFoundError):
+        return (False, None)
+
+
+# ── A 模块：脸型识别 ──
+_a_ok, _a = _try_import("face_detect.detector", "detect_face_shape")
+if _a_ok:
+    (detect_face_shape_real,) = _a
+else:
+    detect_face_shape_real = None
+
+# ── B 模块：发型搜索 ──
+_b_real_ok, _b = _try_import("hairstyle_db.db", "search_hairstyles", "get_hairstyle_by_id")
+if _b_real_ok:
+    (search_hairstyles_real, get_hairstyle_by_id_real) = _b
+else:
+    search_hairstyles_real = None
+    get_hairstyle_by_id_real = None
+
+# ── C 模块：推荐引擎 ──
+_c_ok, _c = _try_import("recommend_engine.engine", "recommend")
+(_recommend_real,) = _c if _c_ok else (None,)
+_c2_ok, _c2 = _try_import("recommend_engine.reverse_infer", "infer_style_vector")
+(_infer_style_vector_real,) = _c2 if _c2_ok else (None,)
+
+# ── D 模块：风格报告 ──
+_d_ok, _d = _try_import("style_report.generator", "generate_style_report")
+(_generate_style_report_real,) = _d if _d_ok else (None,)
+
+# ── Mock fallback ──
+from contracts_mock import (
     mock_detect_face_shape,
     mock_search_hairstyles,
     mock_get_hairstyle_by_id,
@@ -34,12 +86,25 @@ from contracts import (
     mock_generate_style_report,
 )
 
-# ── 联调期切换真实模块（等 PR 合入后取消注释）──
-# from face_analyzer.detector import detect_face_shape
-# from hairstyle_db.db import search_hairstyles, get_hairstyle_by_id
-# from recommender.engine import recommend
-# from recommender.reverse_infer import infer_style_vector
-# from style_report.generator import generate_style_report
+
+# ============================================================
+#  实际使用的函数（真实优先，Mock 兜底）
+# ============================================================
+
+_use_detect_face_shape = detect_face_shape_real or mock_detect_face_shape
+_use_search_hairstyles = search_hairstyles_real or mock_search_hairstyles
+_use_get_hairstyle_by_id = get_hairstyle_by_id_real or mock_get_hairstyle_by_id
+_use_recommend = _recommend_real or mock_recommend
+_use_infer_style_vector = _infer_style_vector_real or mock_infer_style_vector
+_use_generate_style_report = _generate_style_report_real or mock_generate_style_report
+
+# 模块可用性报告（调试用）
+_MODULE_STATUS = {
+    "A (face_detect)": detect_face_shape_real is not None,
+    "B (hairstyle_db)": search_hairstyles_real is not None,
+    "C (recommend_engine)": _recommend_real is not None,
+    "D (style_report)": _generate_style_report_real is not None,
+}
 
 
 # ============================================================
@@ -60,11 +125,7 @@ def detect_face_shape_tool(image_path: str) -> str:
           features（face_ratio/jaw_cheek_ratio/forehead_ratio/eye_distance/nose_type/chin_shape）
     """
     try:
-        # ── Mock 模式 ──
-        report = mock_detect_face_shape(image_path)
-
-        # ── 真实模块（联调期取消注释）──
-        # report = detect_face_shape(image_path)
+        report = _use_detect_face_shape(image_path)
 
         if report.error:
             return json.dumps({
@@ -132,22 +193,13 @@ def search_hairstyles_tool(query_json: str) -> str:
         if q.get("style_vector"):
             style_vector = StyleVector(**q["style_vector"])
 
-        # ── Mock 模式 ──
-        results = mock_search_hairstyles(
+        results = _use_search_hairstyles(
             face_shape=face_shape,
             style_vector=style_vector,
             length=length,
             curl=curl,
             limit=limit,
         )
-        # ── 真实模块（联调期取消注释）──
-        # results = search_hairstyles(
-        #     face_shape=face_shape,
-        #     style_vector=style_vector,
-        #     length=length,
-        #     curl=curl,
-        #     limit=limit,
-        # )
 
         return json.dumps([h.to_dict() for h in results], ensure_ascii=False)
 
@@ -206,10 +258,7 @@ def recommend_tool(params_json: str) -> str:
 
         top_n = int(p.get("top_n", 5))
 
-        # ── Mock 模式 ──
-        results = mock_recommend(face_report, preferences, top_n=top_n)
-        # ── 真实模块（联调期取消注释）──
-        # results = recommend(face_report, preferences, top_n=top_n)
+        results = _use_recommend(face_report, preferences, top_n=top_n)
 
         return json.dumps([r.to_dict() for r in results], ensure_ascii=False)
 
@@ -259,10 +308,7 @@ def generate_report_tool(params_json: str) -> str:
             )
             recommendations.append(rec)
 
-        # ── Mock 模式 ──
-        report_md = mock_generate_style_report(face_report, recommendations)
-        # ── 真实模块（联调期取消注释）──
-        # report_md = generate_style_report(face_report, recommendations)
+        report_md = _use_generate_style_report(face_report, recommendations)
 
         return report_md
 

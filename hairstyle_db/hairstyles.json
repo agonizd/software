@@ -1,0 +1,122 @@
+[
+  {
+    "id": "hair_001",
+    "name": "锁骨微卷发",
+    "image_url": "images/hair_001_clavicle_wavy.png",
+    "suitable_shapes": ["鹅蛋脸", "心形脸", "菱形脸"],
+    "style_vector": {"优雅": 0.80, "甜美": 0.60, "自然": 0.50, "干练": 0.00, "复古": 0.00, "酷飒": 0.00},
+    "length": "中发",
+    "curl": "微卷",
+    "popularity": 0.85,
+    "warnings": ["避免完全露出额头,侧分效果更佳"],
+    "care_tips": "建议使用轻质定型喷雾,保持自然弧度。每4周修剪一次。"
+  },
+  {
+    "id": "hair_002",
+    "name": "层次中长发",
+    "image_url": "images/hair_002_layered_medium.png",
+    "suitable_shapes": ["鹅蛋脸", "圆脸", "方脸", "长脸"],
+    "style_vector": {"干练": 0.85, "酷飒": 0.40, "自然": 0.60, "甜美": 0.00, "复古": 0.00, "优雅": 0.00},
+    "length": "中发",
+    "curl": "直发",
+    "popularity": 0.78,
+    "warnings": ["方脸建议搭配斜刘海柔和下颌线条"],
+    "care_tips": "适合忙碌的早晨:吹干即可成型。定期打薄保持层次感。"
+  },
+  {
+    "id": "hair_003",
+    "name": "日系空气刘海",
+    "image_url": "images/hair_003_air_bangs.png",
+    "suitable_shapes": ["鹅蛋脸", "心形脸", "长脸"],
+    "style_vector": {"甜美": 0.95, "自然": 0.70, "优雅": 0.30, "干练": 0.00, "复古": 0.00, "酷飒": 0.00},
+    "length": "长发",
+    "curl": "微卷",
+    "popularity": 0.90,
+    "warnings": ["圆脸不适合厚重齐刘海", "方脸可用侧分替代齐刘海"],
+    "care_tips": "刘海需每天用卷梳吹整,保持蓬松感。"
+  },
+  {
+    "id": "hair_004",
+    "name": "黑长直",
+    "image_url": "images/hair_004_black_straight.png",
+    "suitable_shapes": ["鹅蛋脸", "长脸", "菱形脸"],
+    "style_vector": {"优雅": 0.70, "复古": 0.60, "自然": 0.80, "干练": 0.00, "甜美": 0.00, "酷飒": 0.00},
+    "length": "长发",
+    "curl": "直发",
+    "popularity": 0.75,
+    "warnings": ["圆脸和方脸可能显脸大"],
+    "care_tips": "定期做发膜护理,避免分叉。"
+  },
+  {
+    "id": "hair_005",
+    "name": "干练齐肩短发",
+    "image_url": "images/hair_005_bob.png",
+    "suitable_shapes": ["鹅蛋脸", "心形脸", "菱形脸"],
+    "style_vector": {"干练": 0.90, "酷飒": 0.70, "优雅": 0.50, "甜美": 0.00, "复古": 0.00, "自然": 0.00},
+    "length": "短发",
+    "curl": "直发",
+    "popularity": 0.72,
+    "warnings": ["圆脸和方脸需谨慎,可能显脸大"],
+    "care_tips": "低维护发型。8周修剪一次。"
+  },
+  {
+    "id": "hair_006",
+    "name": "少年感碎短发",
+    "image_url": "images/hair_006_pixie_cut.png",
+    "suitable_shapes": ["鹅蛋脸", "心形脸"],
+    "style_vector": {"酷飒": 0.85, "干练": 0.75, "自然": 0.50, "甜美": 0.00, "复古": 0.00, "优雅": 0.00},
+    "length": "短发",
+    "curl": "直发",
+    "popularity": 0.65,
+    "warnings": ["圆脸/方脸/长脸不建议"],
+    "care_tips": "需要频繁修剪(4-6周一次)。"
+  },
+  {
+    "id": "hair_007",
+    "name": "复古港风大波浪",
+    "image_url": "images/hair_007_vintage_waves.png",
+    "suitable_shapes": ["鹅蛋脸", "长脸", "菱形脸"],
+    "style_vector": {"复古": 0.90, "优雅": 0.75, "甜美": 0.40, "干练": 0.00, "酷飒": 0.00, "自然": 0.00},
+    "length": "长发",
+    "curl": "大卷",
+    "popularity": 0.80,
+    "warnings": ["小个子不建议", "发量少的蓬松度不够"],
+    "care_tips": "需卷发棒定型,搭配弹力素维持卷度。"
+  },
+  {
+    "id": "hair_008",
+    "name": "法式羊毛卷",
+    "image_url": "images/hair_008_french_perm.png",
+    "suitable_shapes": ["圆脸", "鹅蛋脸", "长脸"],
+    "style_vector": {"复古": 0.70, "自然": 0.60, "甜美": 0.50, "干练": 0.00, "酷飒": 0.00, "优雅": 0.00},
+    "length": "中发",
+    "curl": "大卷",
+    "popularity": 0.82,
+    "warnings": ["方脸可能让脸看起来更宽"],
+    "care_tips": "不能用梳子!用手抓出纹理。"
+  },
+  {
+    "id": "hair_009",
+    "name": "韩式蛋卷头",
+    "image_url": "images/hair_009_korean_curl.png",
+    "suitable_shapes": ["鹅蛋脸", "圆脸", "心形脸"],
+    "style_vector": {"甜美": 0.85, "自然": 0.65, "优雅": 0.40, "干练": 0.00, "复古": 0.00, "酷飒": 0.00},
+    "length": "中发",
+    "curl": "微卷",
+    "popularity": 0.88,
+    "warnings": ["方脸需搭配侧分刘海"],
+    "care_tips": "用大号卷发棒定型,搭配定型喷雾。"
+  },
+  {
+    "id": "hair_010",
+    "name": "一刀切短发",
+    "image_url": "images/hair_010_blunt_bob.png",
+    "suitable_shapes": ["鹅蛋脸", "心形脸"],
+    "style_vector": {"酷飒": 0.80, "干练": 0.70, "优雅": 0.50, "甜美": 0.00, "复古": 0.00, "自然": 0.00},
+    "length": "短发",
+    "curl": "直发",
+    "popularity": 0.76,
+    "warnings": ["圆脸/方脸/长脸不推荐"],
+    "care_tips": "每6周修剪保持线条。"
+  }
+]

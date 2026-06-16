@@ -69,8 +69,24 @@ class MockAgent:
 
         # ── Step 3: 用户想看报告 ──
         if any(w in msg.lower() for w in ["报告", "详细", "为什么", "分析", "生成"]):
+            # "生成照片"/"生成图片"/"生成效果" 不能触发报告
+            preview_kw = ["照片", "图片", "效果图", "预览", "效果"]
+            wants_preview = any(w in msg.lower() for w in preview_kw)
+            if self.session["recommendations"] and wants_preview:
+                return self._handle_preview(msg)
             if self.session["recommendations"]:
                 return self._handle_report()
+
+        # ── Step 3.5: 用户想看效果预览 ──
+        if any(w in msg.lower() for w in ["照片", "图片", "效果图", "预览", "看看效果", "长什么样"]):
+            if self.session["recommendations"]:
+                return self._handle_preview(msg)
+
+        # ── Step 4: 用户想试戴特定发型 ──
+        tryon_kw = ["试戴", "换上", "试试效果", "帮我换", "换上看看"]
+        if any(w in msg.lower() for w in tryon_kw):
+            if self.session["recommendations"]:
+                return self._handle_tryon(msg)
 
         # ── Default: 引导用户 ──
         return self._handle_default()
@@ -172,6 +188,59 @@ class MockAgent:
 
         self.session["stage"] = "reported"
         return report_md
+
+    def _handle_preview(self, msg: str) -> str:
+        """展示推荐发型的预览图"""
+        if not self.session["recommendations"]:
+            return "还没有推荐结果哦～先说你的风格偏好，我帮你推荐后再生成预览！"
+
+        recs = self.session["recommendations"]
+        response = "📸 **发型效果预览**\n\n以下是为您推荐发型的预览效果图，每张都是根据发型特征 AI 生成的参考图：\n\n"
+
+        for i, rec in enumerate(recs[:3], 1):
+            hs = rec["hairstyle"]
+            response += f"**{i}. {hs['name']}** (匹配度 {rec['score']:.0%})\n"
+            response += f"> {hs.get('length', '')} · {hs.get('curl', '')} · 热度 {hs.get('popularity', 0):.0%}\n"
+            if hs.get("care_tips"):
+                response += f"> 💡 {hs['care_tips']}\n"
+            response += "\n"
+
+        response += (
+            "---\n"
+            "💡 提示：点击上方推荐卡片的「👗 试戴预览」按钮，可以把这个发型合成到你的照片上哦！\n"
+            "需要我帮你对比这几款在不同场合的适配度吗？"
+        )
+        return response
+
+    def _handle_tryon(self, msg: str) -> str:
+        """引导用户通过试戴按钮使用试戴功能"""
+        if not self.session["recommendations"]:
+            return "还没有推荐结果哦～先说你的风格偏好，我帮你推荐后再试戴！"
+
+        # 尝试匹配用户提到的发型
+        matched = None
+        for rec in self.session["recommendations"]:
+            hs_name = rec["hairstyle"]["name"]
+            if hs_name in msg:
+                matched = rec
+                break
+
+        if not matched:
+            # 没匹配到具体发型，列出可试戴的选项
+            rec_names = [rec["hairstyle"]["name"] for rec in self.session["recommendations"][:3]]
+            names_text = "、".join(rec_names)
+            return (
+                f"👗 想试戴哪一款呢？当前可试戴的发型有：\n\n"
+                + "\n".join(f"- {name}" for name in rec_names)
+                + f"\n\n💡 点击上方推荐卡片里的 **「👗 试戴预览」** 按钮就能看到效果！\n"
+                f"也可以直接说「试戴{rec_names[0]}」来快速体验~"
+            )
+
+        return (
+            f"👗 好的！想试戴 **{matched['hairstyle']['name']}** 对吧？\n\n"
+            f"💡 请点击上方推荐卡片里的 **「👗 试戴预览」** 按钮，"
+            f"我会把这个发型合成到你的照片上，让你看到真实效果！"
+        )
 
     def _handle_default(self) -> str:
         """当用户输入无法匹配任何阶段时，给出引导"""

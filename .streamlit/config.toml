@@ -1,0 +1,19 @@
+[server]
+# 部署时使用 0.0.0.0 允许外部访问
+address = "0.0.0.0"
+# 无头模式（部署时启用，本地开发可注释）
+headless = true
+# 端口（通过 PORT 环境变量覆盖，适配云平台）
+port = 8501
+
+[browser]
+# 启动时不自动打开浏览器
+serverAddress = "localhost"
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#8F5CF6"
+backgroundColor = "#0F172A"
+secondaryBackgroundColor = "#1E293B"
+textColor = "#F1F5F9"
+font = "sans serif"

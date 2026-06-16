@@ -15,7 +15,8 @@ import traceback
 import os
 
 # ── 导入 contracts ──────────────────────────────────────────────────
-sys.path.insert(0, r"D:\buya\下载")
+_proj_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _proj_root)
 from contracts import (
     FaceReport,
     FaceShape,
@@ -34,18 +35,10 @@ from contracts import (
 )
 
 # ── 导入 D 模块（风格报告）─────────────────────────────────────────
-# 先将项目目录加入 sys.path，确保模块内部 imports 正常
-sys.path.insert(0, r"D:\pycharm\软件工程\软件工程")
-import importlib.util
-spec = importlib.util.spec_from_file_location(
-    "风格报告",
-    r"D:\pycharm\软件工程\软件工程\风格报告.py"
+from style_report.generator import (
+    generate_style_report,
+    _generate_report_local,
 )
-style_report_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(style_report_module)
-
-generate_style_report = style_report_module.generate_style_report
-_generate_report_local = style_report_module._generate_report_local
 
 # ============================================================================
 #  测试框架
@@ -313,4 +306,5 @@ print(f"\n  Routing Decision: {'NoOne' if failed == 0 else 'Engineer (Alex)'}")
 print("=" * 65)
 
 # 退出码
-sys.exit(0 if failed == 0 else 1)
+if __name__ == "__main__":
+    sys.exit(0 if failed == 0 else 1)
