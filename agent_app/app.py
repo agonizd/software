@@ -9,11 +9,6 @@ app.py — Streamlit 前端入口（E 模块）
 
 启动方式：
     streamlit run agent_app/app.py
-
-B 的 UI 组件集成说明：
-    B 负责 delivery 推荐卡片 + 报告展示的 Streamlit 组件。
-    E 在 app.py 中 import 这些组件并嵌入聊天消息流。
-    如果 B 还未交付，使用内置的 fallback 展示（纯文本 + Markdown）。
 """
 
 import streamlit as st
@@ -42,8 +37,6 @@ from agent_app.virtual_tryon import virtual_tryon, batch_tryon
 # ── 尝试导入 B 的 UI 组件 ──
 B_COMPONENTS_AVAILABLE = False
 try:
-    # B 的组件路径（等 B 交付后确认）
-    # from hairstyle_db.components import render_recommendation_card, render_report
     pass
 except ImportError:
     pass
@@ -63,79 +56,126 @@ except ImportError:
 # 页面配置
 # ============================================================
 st.set_page_config(
-    page_title="发型顾问 AI Agent",
-    page_icon="💇",
+    page_title="发型顾问 AI",
+    page_icon="✿",
     layout="centered",
     initial_sidebar_state="expanded",
 )
 
 # ============================================================
-# 全局样式 — 现代发型顾问 AI 主题
+# 全局样式 — 暖色调 · 柔和自然主题
 # ============================================================
 st.markdown("""
 <style>
-/* ── 基础变量与主题 ── */
 :root {
-    --primary: #8B5CF6;
-    --primary-light: #A78BFA;
-    --primary-dark: #7C3AED;
-    --accent: #F59E0B;
-    --accent-light: #FCD34D;
-    --bg: #FAFAFA;
+    --warm-bg: #FAF7F4;
+    --sidebar-bg: #F5F0EB;
     --card-bg: #FFFFFF;
-    --text: #1F2937;
-    --text-secondary: #6B7280;
-    --border: #E5E7EB;
-    --success: #10B981;
-    --radius: 16px;
-    --shadow: 0 2px 12px rgba(0,0,0,0.06);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+    --primary: #C17B4A;
+    --primary-light: #E8A87C;
+    --primary-pale: #FDF0E8;
+    --accent: #9B7B6A;
+    --text: #3D2C1E;
+    --text-muted: #8C7268;
+    --border: #EDE3DA;
+    --success: #7A9E7E;
+    --radius: 20px;
 }
 
-/* ── 全局重置 ── */
-.stApp { background: var(--bg) !important; }
+/* 整体背景 */
+.stApp {
+    background-color: var(--warm-bg) !important;
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif !important;
+}
+
 footer, #MainMenu { visibility: hidden !important; }
 
-/* ── 侧边栏美化 ── */
+/* 侧边栏 — 暖奶油色 */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important;
+    background-color: var(--sidebar-bg) !important;
+    border-right: 1px solid var(--border) !important;
 }
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] label, [data-testid="stSidebar"] .stCaption,
-[data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-    color: #F1F5F9 !important;
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span {
+    color: var(--text) !important;
 }
-[data-testid="stSidebar"] .stRadio label, [data-testid="stSidebar"] .stCheckbox label {
-    color: #CBD5E1 !important;
+[data-testid="stSidebar"] .stCaption {
+    color: var(--text-muted) !important;
 }
 [data-testid="stSidebar"] hr {
-    border-color: #334155 !important;
+    border-color: var(--border) !important;
 }
 
-/* ── 聊天消息美化 ── */
-.stChatMessage { border-radius: 18px !important; padding: 16px 20px !important; }
+/* 聊天消息 */
+.stChatMessage {
+    border-radius: 18px !important;
+    padding: 14px 18px !important;
+    margin-bottom: 10px !important;
+}
 .stChatMessage[data-testid="stChatMessage"] {
     background: var(--card-bg) !important;
-    box-shadow: var(--shadow) !important;
-    margin-bottom: 12px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 2px 8px rgba(180,140,110,0.07) !important;
 }
 
-/* ── 按钮统一风格 ── */
+/* 按钮 */
 .stButton > button {
-    border-radius: 12px !important;
-    font-weight: 600 !important;
+    border-radius: 14px !important;
+    font-weight: 500 !important;
+    border: 1px solid var(--border) !important;
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
     transition: all 0.2s ease !important;
-    border: none !important;
 }
 .stButton > button:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg) !important;
+    background: var(--primary-pale) !important;
+    border-color: var(--primary-light) !important;
+    color: var(--primary) !important;
 }
 
-/* ── 成功/信息框 ── */
+/* 输入框 */
+.stTextInput input, .stTextArea textarea {
+    border-radius: 14px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--card-bg) !important;
+}
+
+/* 提示框柔化 */
 .stSuccess, .stInfo, .stWarning, .stError {
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
+    border-radius: 14px !important;
+}
+
+/* 标签 Chip 样式 */
+.style-chip {
+    display: inline-block;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.18s;
+    margin: 4px;
+}
+.style-chip:hover {
+    background: var(--primary-pale);
+    border-color: var(--primary-light);
+    color: var(--primary);
+}
+
+/* 推荐卡片 */
+.rec-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(180,140,110,0.06);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -144,16 +184,15 @@ footer, #MainMenu { visibility: hidden !important; }
 # Session State 初始化
 # ============================================================
 def init_session():
-    """初始化 Streamlit 会话状态"""
     defaults = {
-        "messages": [],                # 对话历史: [{"role": "user"/"assistant", "content": ...}]
-        "face_report": None,           # 当前脸型分析结果 (dict)
-        "last_recommendations": None,  # 最近一次推荐结果 (list of dict)
-        "uploaded_image_path": None,   # 上传照片的本地路径
-        "mode": "mock",                # "mock" | "agent"
-        "agent_executor": None,        # LangChain AgentExecutor 实例
-        "tryon_results": {},          # 试戴结果 {hairstyle_id: result_image_path}
-        "pending_tryon": None,        # 待处理的试戴请求
+        "messages": [],
+        "face_report": None,
+        "last_recommendations": None,
+        "uploaded_image_path": None,
+        "mode": "mock",
+        "agent_executor": None,
+        "tryon_results": {},
+        "pending_tryon": None,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -164,10 +203,32 @@ init_session()
 
 
 # ============================================================
-# 侧边栏
+# 工具函数
 # ============================================================
+FACE_EMOJI = {
+    "鹅蛋脸": "🥚", "圆脸": "🌕", "方脸": "⬜",
+    "长脸": "📏", "心形脸": "🌸", "菱形脸": "💎",
+}
+
+STYLE_TAGS = [
+    ("干练通勤", "👔"), ("甜美约会", "🌸"), ("复古港风", "📼"),
+    ("酷飒少年", "✦"), ("自然清新", "🌿"), ("优雅知性", "🎀"),
+]
+
+
+def _resolve_image_path(image_url: str) -> str:
+    if not image_url:
+        return ""
+    candidate = os.path.join(PROJECT_ROOT, "hairstyle_db", image_url)
+    if os.path.isfile(candidate):
+        return candidate
+    candidate2 = os.path.join(PROJECT_ROOT, image_url)
+    if os.path.isfile(candidate2):
+        return candidate2
+    return ""
+
+
 def _on_photo_upload():
-    """照片上传回调：保存 + 即时脸型分析"""
     f = st.session_state.get("sidebar_uploader")
     if not f:
         return
@@ -179,129 +240,169 @@ def _on_photo_upload():
         fh.write(f.getbuffer())
     st.session_state.uploaded_image_path = img_path
 
-    # 即时脸型分析
     try:
-        from agent_app.face_detect import detect_face_shape
-        shape, conf, _landmarks = detect_face_shape(img_path)
-        st.session_state.face_report = {"face_shape": shape, "confidence": conf}
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": f"📸 脸型分析完成！你的脸型是 **{shape}**（置信度 {conf:.0%}）",
-        })
+        from face_detect.detector import detect_face_shape
+        report = detect_face_shape(img_path)
+        if report.error:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"照片上传了，不过人脸识别遇到了一点问题：{report.error}\n\n建议换一张光线更好的正面照试试 ☀️",
+            })
+        elif report.face_shape is not None:
+            shape = report.face_shape.value
+            conf = report.confidence
+            st.session_state.face_report = {"face_shape": shape, "confidence": conf}
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": (
+                    f"照片收到啦 ✿\n\n"
+                    f"分析结果显示你是 **{shape}** {FACE_EMOJI.get(shape, '')}，"
+                    f"置信度 **{conf:.0%}**\n\n"
+                    f"现在告诉我你想要什么风格，我来为你推荐最适合的发型 🌿"
+                ),
+            })
+        else:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "照片上传成功，但没有识别到清晰的正面人脸。建议拍一张正面、免冠、光线充足的照片重新上传 ☀️",
+            })
     except Exception as e:
         st.session_state.messages.append({
             "role": "assistant",
-            "content": f"⚠️ 人脸检测失败：{e}\n\n请确保照片光线充足、正面免冠。",
+            "content": f"照片已保存，脸型分析暂时遇到了些问题（{e}）。你可以直接告诉我你的脸型，或者稍后重试 🌿",
         })
 
 
+# ============================================================
+# 侧边栏 — 暖奶油风格
+# ============================================================
 def render_sidebar():
-    """暗色侧边栏：上传 + 状态 + 设置"""
     with st.sidebar:
-        # Logo & 标题
+        # 顶部品牌区
         st.markdown("""
-        <div style="text-align:center; padding:12px 0 8px 0;">
-            <div style="font-size:36px; margin-bottom:4px;">💇</div>
-            <div style="font-size:18px; font-weight:700; color:#F1F5F9;">
-            发型顾问 AI</div>
-            <div style="font-size:11px; color:#94A3B8; margin-top:2px;">
-            你的专属智能造型师</div>
+        <div style="padding: 20px 4px 16px 4px;">
+            <div style="font-size: 28px; margin-bottom: 6px;">✿</div>
+            <div style="font-size: 17px; font-weight: 500; color: #3D2C1E; letter-spacing: 0.3px;">
+                发型顾问
+            </div>
+            <div style="font-size: 12px; color: #8C7268; margin-top: 2px; line-height: 1.5;">
+                你的专属智能造型师
+            </div>
         </div>
         """, unsafe_allow_html=True)
+
         st.divider()
 
-        # ── 照片上传（紧凑卡片式）──
-        st.markdown('<p style="color:#94A3B8; font-size:12px; font-weight:600; margin-bottom:6px;">📷 上传正面照</p>', unsafe_allow_html=True)
+        # 上传照片
+        st.markdown('<div style="font-size:12px; color:#8C7268; margin-bottom:6px;">上传正面照</div>', unsafe_allow_html=True)
         st.file_uploader(
-            "选择 JPG/PNG 照片",
+            "选择照片",
             type=["jpg", "jpeg", "png"],
             key="sidebar_uploader",
             on_change=_on_photo_upload,
-            help="光线充足、正面免冠效果最佳",
+            help="正面、免冠、光线充足效果最佳",
+            label_visibility="collapsed",
         )
 
-        # 已上传缩略图
         if st.session_state.uploaded_image_path and os.path.isfile(st.session_state.uploaded_image_path):
-            st.image(st.session_state.uploaded_image_path, width=140)
+            st.image(st.session_state.uploaded_image_path, width=160)
 
         st.divider()
 
-        # ── 脸型状态 ──
+        # 脸型状态
         if st.session_state.face_report:
             fr = st.session_state.face_report
-            shape_emoji = FACE_EMOJI.get(fr["face_shape"], "😊")
-            st.success(f"{shape_emoji} {fr['face_shape']} — 置信度 {fr['confidence']:.0%}")
+            shape = fr["face_shape"]
+            conf = fr["confidence"]
+            emoji = FACE_EMOJI.get(shape, "")
+            st.markdown(f"""
+            <div style="background:#FDF0E8; border-radius:14px; padding:12px 14px;
+            border:1px solid #E8C9A8;">
+                <div style="font-size:13px; font-weight:500; color:#3D2C1E;">{emoji} {shape}</div>
+                <div style="font-size:11px; color:#8C7268; margin-top:2px;">置信度 {conf:.0%}</div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.info("📋 尚未分析脸型")
+            st.markdown("""
+            <div style="background:#F5F0EB; border-radius:14px; padding:12px 14px;
+            border:1px solid #EDE3DA;">
+                <div style="font-size:12px; color:#8C7268;">暂未分析脸型</div>
+                <div style="font-size:11px; color:#B0A098; margin-top:2px;">上传照片后自动识别</div>
+            </div>
+            """, unsafe_allow_html=True)
 
         st.divider()
 
-        # ── 运行模式 ──
-        st.markdown('<p style="color:#94A3B8; font-size:12px; font-weight:600; margin-bottom:6px;">⚙️ 运行模式</p>', unsafe_allow_html=True)
+        # 运行模式
+        st.markdown('<div style="font-size:12px; color:#8C7268; margin-bottom:6px;">运行模式</div>', unsafe_allow_html=True)
         mode = st.radio(
             "模式",
-            ["🤖 Mock（离线）", "🧠 Agent（需 Key）"],
+            ["Mock（离线）", "Agent（需 Key）"],
             index=0 if st.session_state.mode == "mock" else 1,
             label_visibility="collapsed",
         )
         st.session_state.mode = "mock" if "Mock" in mode else "agent"
 
         if st.session_state.mode == "agent":
-            api_key = st.text_input("OpenAI API Key", type="password",
+            api_key = st.text_input(
+                "OpenAI API Key",
+                type="password",
                 value=os.getenv("OPENAI_API_KEY", ""),
-                placeholder="sk-...")
+                placeholder="sk-...",
+            )
             if api_key:
                 os.environ["OPENAI_API_KEY"] = api_key
 
         st.divider()
 
-        # ── 快速统计 ──
+        # 底部统计 & 重置
         msg_count = len(st.session_state.messages)
         rec_count = len(st.session_state.last_recommendations) if st.session_state.last_recommendations else 0
-        st.caption(f"💬 {msg_count} 条消息 · 🎯 {rec_count} 条推荐")
+        st.caption(f"{msg_count} 条消息  ·  {rec_count} 条推荐")
 
-        # 重置
-        if st.button("🔄 重新开始", use_container_width=True):
+        if st.button("重新开始", use_container_width=True):
             for key in ["messages", "face_report", "last_recommendations",
                         "uploaded_image_path", "agent_executor", "tryon_results"]:
                 st.session_state[key] = [] if key == "messages" else ({} if key == "tryon_results" else None)
             st.rerun()
 
-        st.caption("v1.0 · contracts.py")
+        st.caption("v1.0")
 
 
 # ============================================================
-# 常量
+# Landing Hero — 柔和欢迎页
 # ============================================================
-FACE_EMOJI = {
-    "鹅蛋脸": "🥚", "圆脸": "😊", "方脸": "🔲",
-    "长脸": "📏", "心形脸": "❤️", "菱形脸": "💎",
-}
+def render_landing_hero():
+    st.markdown("""
+    <div style="text-align:center; padding: 56px 16px 40px 16px;">
+        <div style="font-size: 52px; margin-bottom: 14px; color: #C17B4A;">✿</div>
+        <div style="font-size: 26px; font-weight: 500; color: #3D2C1E;
+        letter-spacing: 0.5px; margin-bottom: 10px;">
+            找到属于你的发型
+        </div>
+        <div style="font-size: 14px; color: #8C7268; max-width: 380px;
+        margin: 0 auto 36px auto; line-height: 1.8;">
+            上传一张照片，AI 分析脸型，为你精准推荐<br>
+            最适合的发型风格
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-STYLE_TAGS = [
-    ("干练通勤", "💼"), ("甜美约会", "🌸"), ("复古港风", "📼"),
-    ("酷飒少年", "⚡"), ("自然清新", "🌿"), ("优雅知性", "💜"),
-]
-def _resolve_image_path(image_url: str) -> str:
-    """将相对路径解析为绝对路径"""
-    if not image_url:
-        return ""
-    # 先尝试 hairstyle_db 目录
-    candidate = os.path.join(PROJECT_ROOT, "hairstyle_db", image_url)
-    if os.path.isfile(candidate):
-        return candidate
-    # 再尝试项目根目录
-    candidate2 = os.path.join(PROJECT_ROOT, image_url)
-    if os.path.isfile(candidate2):
-        return candidate2
-    return ""
+    # 风格标签
+    st.markdown('<div style="text-align:center; margin-bottom:8px; font-size:12px; color:#8C7268;">选择你喜欢的风格开始</div>', unsafe_allow_html=True)
+    cols = st.columns(6)
+    clicked_tag = None
+    for i, (tag, icon) in enumerate(STYLE_TAGS):
+        with cols[i]:
+            if st.button(f"{icon} {tag}", key=f"tag_{tag}", use_container_width=True):
+                clicked_tag = tag
+    return clicked_tag
 
 
 # ============================================================
-# 推荐卡片（现代卡片式设计）
+# 推荐卡片 — 柔和暖色风
 # ============================================================
 def fallback_recommendation_card(rec: dict, index: int):
-    """现代卡片：左侧预览图 + 右侧信息 + 底部操作"""
     hs = rec.get("hairstyle", {})
     score = rec.get("score", 0)
     reasons = rec.get("reasons", [])
@@ -309,84 +410,97 @@ def fallback_recommendation_card(rec: dict, index: int):
     hairstyle_id = hs.get("id", "")
     hairstyle_name = hs.get("name", "")
 
-    # 匹配度颜色
+    # 匹配度颜色（暖色系）
     if score >= 0.85:
-        bar_color = "#10B981"; badge = "🏆 完美匹配"
+        bar_color = "#7A9E7E"; badge_bg = "#EEF5EE"; badge_text = "完美匹配"
     elif score >= 0.7:
-        bar_color = "#8B5CF6"; badge = "⭐ 高度推荐"
+        bar_color = "#C17B4A"; badge_bg = "#FDF0E8"; badge_text = "高度推荐"
     elif score >= 0.55:
-        bar_color = "#F59E0B"; badge = "👍 可以尝试"
+        bar_color = "#B08B6E"; badge_bg = "#F5EDE5"; badge_text = "可以尝试"
     else:
-        bar_color = "#6B7280"; badge = "💡 仅供参考"
+        bar_color = "#A09080"; badge_bg = "#F0EBEA"; badge_text = "仅供参考"
 
-    # 解析图片路径
     img_path = _resolve_image_path(hs.get("image_url", ""))
 
-    # 卡片容器
     with st.container():
+        # 顶部徽章行
         st.markdown(f"""
-        <div style="background: white; border-radius: 20px; padding: 20px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06); margin-bottom: 16px;
-        border: 1px solid #F3F4F6; position: relative; overflow: hidden;">
-        <!-- 顶部色条 -->
-        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px;
-        background: {bar_color}; border-radius: 20px 20px 0 0;"></div>
-        <!-- 排名徽章 -->
-        <div style="position: absolute; top: 14px; right: 16px;
-        background: {bar_color}15; color: {bar_color}; font-size: 12px;
-        font-weight: 700; padding: 4px 12px; border-radius: 20px;">
-        #{index} {badge}</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+            <div style="width:28px; height:28px; border-radius:50%;
+            background:{badge_bg}; border:1px solid {bar_color}30;
+            display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:500; color:{bar_color};">
+            {index}</div>
+            <div style="font-size:16px; font-weight:500; color:#3D2C1E;">{hairstyle_name}</div>
+            <div style="margin-left:auto; background:{badge_bg}; color:{bar_color};
+            font-size:11px; padding:3px 10px; border-radius:20px;
+            border:1px solid {bar_color}30;">
+            {badge_text}</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # ── 图片 + 基本信息 ──
         col_img, col_info = st.columns([1, 2])
         with col_img:
             if img_path and os.path.isfile(img_path):
-                st.image(img_path, width=180)
+                st.image(img_path, use_container_width=True)
             else:
                 st.markdown(f"""
-                <div style="width:180px; height:220px; background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
-                border-radius: 14px; display: flex; align-items: center; justify-content: center;
-                font-size: 48px;">💇</div>
+                <div style="aspect-ratio:3/4; background:#F5F0EB;
+                border-radius:16px; display:flex; align-items:center;
+                justify-content:center; font-size:32px; color:#C17B4A;">✿</div>
                 """, unsafe_allow_html=True)
 
         with col_info:
-            # 发型名称 + 匹配度条
-            st.markdown(f"### {hairstyle_name}")
+            # 匹配度进度条
             st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 10px; margin: 8px 0 12px 0;">
-                <div style="flex: 1; height: 8px; background: #F3F4F6; border-radius: 4px; overflow: hidden;">
-                    <div style="width: {score:.0%}; height: 100%; background: {bar_color};
-                    border-radius: 4px; transition: width 0.6s ease;"></div>
+            <div style="margin:4px 0 14px 0;">
+                <div style="font-size:11px; color:#8C7268; margin-bottom:5px;">匹配度</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="flex:1; height:6px; background:#EDE3DA;
+                    border-radius:3px; overflow:hidden;">
+                        <div style="width:{score:.0%}; height:100%;
+                        background:{bar_color}; border-radius:3px;"></div>
+                    </div>
+                    <span style="font-size:13px; font-weight:500;
+                    color:{bar_color};">{score:.0%}</span>
                 </div>
-                <span style="font-size: 14px; font-weight: 700; color: {bar_color};">{score:.0%}</span>
             </div>
             """, unsafe_allow_html=True)
 
             # 推荐理由
-            for reason in reasons:
-                st.markdown(f"<p style='color:#4B5563; font-size:14px; margin:2px 0;'>✦ {reason}</p>", unsafe_allow_html=True)
+            for reason in reasons[:3]:
+                st.markdown(f"""
+                <div style="font-size:13px; color:#5A4035; margin:3px 0;
+                padding-left:10px; border-left:2px solid {bar_color}60;">
+                {reason}</div>
+                """, unsafe_allow_html=True)
 
-            # 标签行
+            # 属性标签
             tags = []
             if hs.get("length"):
-                tags.append(f"📏 {hs['length']}")
+                tags.append(hs["length"])
             if hs.get("curl"):
-                tags.append(f"🌀 {hs['curl']}")
+                tags.append(hs["curl"])
             if hs.get("popularity"):
-                tags.append(f"🔥 {hs['popularity']:.0%}")
+                tags.append(f"热度 {hs['popularity']:.0%}")
             if tags:
-                st.caption("  |  ".join(tags))
+                tag_html = "".join([
+                    f'<span style="display:inline-block; background:#F5F0EB; '
+                    f'border-radius:20px; padding:2px 10px; font-size:11px; '
+                    f'color:#8C7268; margin:3px 3px 0 0;">{t}</span>'
+                    for t in tags
+                ])
+                st.markdown(f'<div style="margin-top:10px;">{tag_html}</div>', unsafe_allow_html=True)
 
-        # ── 操作按钮 ──
+        # 操作按钮
         user_photo = st.session_state.get("uploaded_image_path")
         can_tryon = user_photo and os.path.isfile(user_photo) and img_path and os.path.isfile(img_path)
 
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+        st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
         with col_btn1:
             if st.button(
-                f"👗 试戴预览" if can_tryon else "👗 试戴预览（请先上传照片）",
+                "试戴预览" if can_tryon else "试戴（请先上传照片）",
                 key=f"tryon_btn_{hairstyle_id}_{index}",
                 disabled=not can_tryon,
                 use_container_width=True,
@@ -406,122 +520,65 @@ def fallback_recommendation_card(rec: dict, index: int):
                     st.rerun()
         with col_btn2:
             if hairstyle_id in st.session_state.tryon_results:
-                if st.button(
-                    "📸 查看效果",
-                    key=f"view_{hairstyle_id}_{index}",
-                    use_container_width=True,
-                ):
+                if st.button("查看效果", key=f"view_{hairstyle_id}_{index}", use_container_width=True):
                     st.session_state.show_tryon = hairstyle_id
                     st.rerun()
         with col_btn3:
-            with st.expander("📋 详情"):
+            with st.expander("打理建议与注意事项"):
                 if hs.get("warnings"):
-                    st.warning("⚠️ " + "；".join(hs["warnings"]))
+                    st.markdown(f'<div style="font-size:13px; color:#A07060;">注意：{"；".join(hs["warnings"])}</div>', unsafe_allow_html=True)
                 if hs.get("care_tips"):
-                    st.info("💡 " + hs["care_tips"])
+                    st.markdown(f'<div style="font-size:13px; color:#6A8A6E; margin-top:6px;">{hs["care_tips"]}</div>', unsafe_allow_html=True)
                 if details:
                     st.caption(
-                        f"脸型: {details.get('face_match', 0):.0%} | "
-                        f"风格: {details.get('style_similarity', 0):.0%} | "
-                        f"热度: {details.get('popularity', 0):.0%}"
+                        f"脸型匹配 {details.get('face_match', 0):.0%}  ·  "
+                        f"风格相似 {details.get('style_similarity', 0):.0%}  ·  "
+                        f"热度 {details.get('popularity', 0):.0%}"
                     )
 
-        # 试戴结果展示
+        # 试戴结果
         if st.session_state.get("show_tryon") == hairstyle_id:
             result_path = st.session_state.tryon_results.get(hairstyle_id)
             if result_path and os.path.isfile(result_path):
-                st.image(result_path, caption=f"✨ {hairstyle_name} 试戴效果", width=480)
-                st.caption("💡 合成效果仅供参考，实际效果因发质发量略有差异")
+                st.image(result_path, caption=f"{hairstyle_name} · 试戴效果（仅供参考）", width=400)
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
-def _handle_tryon_click(hairstyle_id, hairstyle_name, img_path, user_photo):
-    """试戴按钮回调"""
-    st.session_state.messages.append({
-        "role": "user",
-        "content": f"帮我试戴「{hairstyle_name}」看看效果",
-        "is_tryon": True,
-        "tryon_info": {
-            "hairstyle_id": hairstyle_id,
-            "hairstyle_name": hairstyle_name,
-            "img_path": img_path,
-            "user_photo": user_photo,
-        },
-    })
+        st.markdown('<div style="height:4px; background:#EDE3DA; border-radius:2px; margin:16px 0 20px 0;"></div>', unsafe_allow_html=True)
 
 
 def fallback_report_display(report_md: str):
-    """B 交付前的报告展示 fallback"""
     with st.container():
         st.markdown(f"""
-        <div style="background: white; border-radius: 20px; padding: 24px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06); margin: 12px 0;
-        border-left: 4px solid #8B5CF6;">
+        <div style="background:#FDF8F4; border-radius:18px; padding:22px 24px;
+        border:1px solid #EDE3DA; margin:10px 0;">
         {report_md}
         </div>
         """, unsafe_allow_html=True)
 
 
 # ============================================================
-# 聊天渲染（含 Landing Hero）
+# 聊天渲染
 # ============================================================
-def render_landing_hero():
-    """首次访问的欢迎页面"""
-    st.markdown("""
-    <div style="text-align: center; padding: 48px 20px 32px 20px;">
-        <div style="font-size: 64px; margin-bottom: 12px; animation: float 3s ease-in-out infinite;">
-            💇
-        </div>
-        <h1 style="font-size: 36px; font-weight: 800; color: #1F2937; margin: 0 0 8px 0;">
-            你的专属 <span style="color: #8B5CF6;">AI 发型顾问</span>
-        </h1>
-        <p style="font-size: 16px; color: #6B7280; max-width: 480px; margin: 0 auto 28px auto; line-height: 1.6;">
-            上传照片 → AI 分析脸型 → 精准推荐最适合你的发型
-        </p>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px;">
-    """, unsafe_allow_html=True)
-
-    # 快速风格标签
-    cols = st.columns(6)
-    for i, (tag, emoji) in enumerate(STYLE_TAGS):
-        with cols[i]:
-            if st.button(f"{emoji} {tag}", key=f"tag_{tag}", use_container_width=True):
-                st.session_state.messages.append({"role": "user", "content": f"我想要{tag}风格"})
-                return tag
-
-    st.markdown("</div></div>", unsafe_allow_html=True)
-    return None
-
-
 def render_chat():
-    """渲染聊天消息（含欢迎 Hero）"""
     if not st.session_state.messages:
-        # 首次访问 → Landing Hero
         tag = render_landing_hero()
-        # 引导消息
         st.session_state.messages.append({
             "role": "assistant",
             "content": (
-                "你好！我是你的专属发型顾问 💇\n\n"
-                "**三步搞定完美发型：**\n"
-                "1️⃣ 在左侧上传一张正面照\n"
-                "2️⃣ 点击上方风格标签，或直接告诉我你想要的风格\n"
-                "3️⃣ 我会为你推荐最适合的发型，还能虚拟试戴！\n\n"
-                "开始试试吧~ 😊"
+                "你好，很高兴见到你 🌿\n\n"
+                "我可以帮你分析脸型、推荐最适合的发型，还能做虚拟试戴预览。\n\n"
+                "**可以这样开始：**\n"
+                "- 在左侧上传一张正面照，AI 会自动识别你的脸型\n"
+                "- 或者直接点击上面的风格标签，告诉我你的偏好\n"
+                "- 也可以直接和我聊，描述你想要的效果 ☁️"
             ),
         })
-        # 风格标签被点击
         if tag:
             st.session_state.messages.append({"role": "user", "content": f"我想要{tag}风格"})
         st.rerun()
 
-    # 显示历史消息
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            if msg.get("is_tryon"):
-                st.markdown(msg["content"])
-            elif msg.get("is_tryon_result"):
+            if msg.get("is_tryon") or msg.get("is_tryon_result"):
                 st.markdown(msg["content"])
             elif msg.get("is_report"):
                 fallback_report_display(msg["content"])
@@ -540,7 +597,7 @@ def main():
     render_sidebar()
     render_chat()
 
-    # 处理试戴请求（来自按钮回调，无需 chat_input）
+    # 处理试戴请求
     pending = [m for m in st.session_state.messages[-3:] if m.get("is_tryon")]
     if pending:
         tryon_info = pending[-1]["tryon_info"]
@@ -551,8 +608,8 @@ def main():
             })
         st.rerun()
 
-    # chat_input 收消息
-    if prompt := st.chat_input("描述你想要的风格，例如「干练通勤」「甜美约会」..."):
+    # 聊天输入
+    if prompt := st.chat_input("告诉我你想要的风格，或描述你的需求…"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         image_path = st.session_state.get("uploaded_image_path")
 
@@ -570,10 +627,8 @@ def main():
 
 
 def run_mock_agent(prompt: str, image_path: str = None) -> str:
-    """运行 Mock Agent"""
     agent = MockAgent()
 
-    # 从 session state 恢复状态
     if st.session_state.face_report:
         agent.session["face_report"] = st.session_state.face_report
         agent.session["stage"] = "face_analyzed"
@@ -583,7 +638,6 @@ def run_mock_agent(prompt: str, image_path: str = None) -> str:
 
     response = agent.process(prompt, image_path)
 
-    # 同步状态回 session state
     st.session_state.face_report = agent.session["face_report"]
     st.session_state.last_recommendations = agent.session["recommendations"]
 
@@ -591,70 +645,43 @@ def run_mock_agent(prompt: str, image_path: str = None) -> str:
 
 
 def run_tryon(tryon_info: dict) -> str:
-    """
-    执行虚拟试戴：将发型预览图合成到用户照片上。
-
-    Args:
-        tryon_info: {
-            "hairstyle_id": str,
-            "hairstyle_name": str,
-            "img_path": str,       # 发型预览图路径
-            "user_photo": str,     # 用户照片路径
-        }
-
-    Returns:
-        结果描述文本
-    """
     hairstyle_name = tryon_info["hairstyle_name"]
     hairstyle_id = tryon_info["hairstyle_id"]
     img_path = tryon_info["img_path"]
     user_photo = tryon_info["user_photo"]
 
-    with st.spinner(f"✨ 正在为你合成「{hairstyle_name}」的试戴效果..."):
+    with st.spinner(f"正在为你合成「{hairstyle_name}」的试戴效果，稍等一下…"):
         try:
             output_dir = os.path.join(PROJECT_ROOT, "hairstyle_db", "tryon_results")
             result_path = virtual_tryon(user_photo, img_path, output_dir)
 
-            # 保存结果到 session state
             st.session_state.tryon_results[hairstyle_id] = result_path
             st.session_state.show_tryon = hairstyle_id
 
-            # 同时显示结果图片
-            st.image(result_path, caption=f"✨ {hairstyle_name} 试戴效果", width=400)
+            st.image(result_path, caption=f"{hairstyle_name} · 试戴效果", width=400)
 
             return (
-                f"👗 **{hairstyle_name}** 试戴效果来啦！\n\n"
-                f"上面是 AI 合成的预览效果图，可以看到你换上这款发型的整体感觉。\n\n"
-                f"💡 小提示：\n"
-                f"- 合成效果主要展示发型轮廓和风格，实际效果会因发质发量略有差异\n"
-                f"- 建议拿这张图给发型师参考，沟通更高效！\n"
-                f"- 想看其他发型的试戴效果？点击推荐卡片里的「试戴预览」按钮~"
+                f"「{hairstyle_name}」的试戴效果来了 ✿\n\n"
+                f"上面是 AI 合成的预览，可以感受一下整体风格。\n\n"
+                f"实际效果会因发质和发量有所不同，可以把这张图给发型师参考，沟通会更顺畅 🌿\n\n"
+                f"想看其他发型？点击推荐卡片里的「试戴预览」就可以~"
             )
 
         except ValueError as e:
             err_msg = str(e)
             if "未检测到人脸" in err_msg:
                 return (
-                    f"⚠️ 试戴失败：{err_msg}\n\n"
-                    f"请先上传一张清晰正面照（光线充足、面部无遮挡），"
-                    f"再进行试戴预览。"
+                    f"试戴暂时无法完成：{err_msg}\n\n"
+                    f"建议换一张正面、免冠的清晰照片再试试 ☀️"
                 )
-            return f"⚠️ 试戴遇到问题：{err_msg}\n\n请稍后重试或换一张照片试试~"
+            return f"试戴遇到了一点问题：{err_msg}\n\n可以稍后重试或换张照片~"
         except Exception as e:
-            return f"❌ 试戴合成出错：{str(e)}\n\n请检查照片格式或稍后重试。"
+            return f"合成过程出了些小差错：{str(e)}\n\n请检查照片格式或稍后重试。"
 
 
 def run_langchain_agent(prompt: str, image_path: str = None) -> str:
-    """
-    运行 LangChain ReAct Agent。
-
-    需要：
-    - OPENAI_API_KEY 环境变量
-    - langchain + langchain-openai 已安装
-    """
     try:
         if st.session_state.agent_executor is None:
-            # 构建 LangChain Tools
             tools = [
                 Tool(
                     name="detect_face_shape",
@@ -688,7 +715,6 @@ def run_langchain_agent(prompt: str, image_path: str = None) -> str:
                 agent=agent, tools=tools, verbose=True, handle_parsing_errors=True,
             )
 
-        # 构建输入
         input_text = prompt
         if image_path:
             input_text += f"\n\n用户上传了照片：{image_path}"
@@ -697,7 +723,7 @@ def run_langchain_agent(prompt: str, image_path: str = None) -> str:
         return result["output"]
 
     except Exception as e:
-        return f"Agent 模式出错（回退到 Mock 模式）：{str(e)}"
+        return f"Agent 模式出错（已回退到 Mock 模式）：{str(e)}"
 
 
 if __name__ == "__main__":
