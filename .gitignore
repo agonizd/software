@@ -45,3 +45,5 @@ uploaded_photos/
 !hairstyle_db/images/*.jpeg
 !hairstyle_db/images/*.png
 !hairstyle_db/images/*.webp
+outputs/
+test_images/
