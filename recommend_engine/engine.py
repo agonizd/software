@@ -28,9 +28,8 @@ from recommend_engine.scoring import (
 )
 
 # ─────────────────────────────────────────────────────────────
-# B 模块接口：B 交付后把下面这行取消注释，注释掉 Mock 那行
-# from hairstyle_db.db import search_hairstyles
-from contracts import mock_search_hairstyles as search_hairstyles
+# B 模块接口：使用真实 JSON 数据库搜索
+from hairstyle_db.db import search_hairstyles
 # ─────────────────────────────────────────────────────────────
 
 
