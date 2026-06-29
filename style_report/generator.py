@@ -35,7 +35,7 @@ import sys
 from typing import List, Optional, Dict
 
 # ── 导入 contracts ──────────────────────────────────────────────────
-sys.path.insert(0, r"D:\buya\下载")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from contracts import (  # type: ignore[import-untyped]
     FaceReport,
     FaceShape,

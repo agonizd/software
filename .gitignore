@@ -1,49 +1,75 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
+*.so
 .Python
-*.egg-info/
-dist/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# IDE
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Large model files (downloaded at runtime)
+*.task
+*.pth
+*.onnx
+*.bin
+
+# MediaPipe model (downloaded automatically)
+face_landmarker.task
+
+# Image assets — 发型预览图需要入库，用户上传照片不入库
+uploaded_photos/
+
+# User uploaded photos (privacy)
+uploaded_photos/
+tryon_results/
+
+# Output files
+outputs/
+*.pptx
+*.pdf
 
 # OS
 .DS_Store
 Thumbs.db
 
-# 虚拟环境
-venv/
-env/
-.env
+# Streamlit
+.streamlit/secrets.toml
 
-# Jupyter
-.ipynb_checkpoints/
+# Workbuddy
+.workbuddy/
 
-# 临时文件
+# Temp files
 *.tmp
 *.log
-
-# MediaPipe 模型文件（从网络下载，不入库）
-face_landmarker.task
-
-# 用户上传的图片
-uploaded_photos/
-*.jpg
-*.jpeg
-*.png
-*.webp
-
-# 发型数据库预览图（需要入库）
-!hairstyle_db/images/*.jpg
-!hairstyle_db/images/*.jpeg
-!hairstyle_db/images/*.png
-!hairstyle_db/images/*.webp
-outputs/
-test_images/

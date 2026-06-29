@@ -48,7 +48,10 @@ class MockAgent:
         msg = user_message.strip()
 
         # ── Step 1: 用户上传照片 → 分析脸型 ──
-        if image_path and self.session["stage"] in ("start", "face_analyzed"):
+        # 只在首次上传（stage=start）且无文本输入时触发
+        # 修复：之前 stage in ("start","face_analyzed") 导致已分析脸型时
+        # 用户输入文字仍被误判为"上传了新照片"而重复分析
+        if image_path and self.session["stage"] == "start":
             return self._handle_face_analysis(image_path)
 
         # ── Step 2: 有脸型 + 有风格关键词 → 推荐 ──

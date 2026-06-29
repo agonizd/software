@@ -1,11 +1,9 @@
 """
 app.py — Streamlit 前端入口（E 模块）
 
-两种运行模式：
-1. Mock 模式（默认）：不需要 OpenAI API Key，
-   Agent 用简单的规则引擎自动调度工具，适合 Day 1-3 开发调试
-2. Agent 模式：需要 OPENAI_API_KEY，用 LangChain ReAct Agent，
-   真正的自然语言理解 + 自主工具调度
+自动检测运行模式：
+- 检测到 DASHSCOPE_API_KEY 环境变量 + LangChain 已安装 → 阿里云百炼 Agent 模式
+- 否则 → Mock 模式（离线规则引擎，无需任何配置）
 
 启动方式：
     streamlit run agent_app/app.py
@@ -43,11 +41,13 @@ except ImportError:
 
 # ── 尝试导入 LangChain（Agent 模式）──
 LANGCHAIN_AVAILABLE = False
+DASHSCOPE_AVAILABLE = False
 try:
-    from langchain_openai import ChatOpenAI
+    from langchain_community.chat_models import ChatTongyi
     from langchain.agents import create_react_agent, AgentExecutor
     from langchain.tools import Tool
     LANGCHAIN_AVAILABLE = True
+    DASHSCOPE_AVAILABLE = True
 except ImportError:
     pass
 
@@ -67,116 +67,120 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-:root {
-    --warm-bg: #FAF7F4;
-    --sidebar-bg: #F5F0EB;
-    --card-bg: #FFFFFF;
-    --primary: #C17B4A;
-    --primary-light: #E8A87C;
-    --primary-pale: #FDF0E8;
-    --accent: #9B7B6A;
-    --text: #3D2C1E;
-    --text-muted: #8C7268;
-    --border: #EDE3DA;
-    --success: #7A9E7E;
-    --radius: 20px;
+/* ── 1. 根背景：强制覆盖 Streamlit 主题 ── */
+html, body, .stApp, #root {
+    background-color: #FAF7F4 !important;
+}
+footer, #MainMenu {
+    visibility: hidden !important;
 }
 
-/* 整体背景 */
-.stApp {
-    background-color: var(--warm-bg) !important;
-    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif !important;
+/* ── 2. 主内容区：所有中间容器全部收归暖色 ── */
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"],
+section[data-testid="stSidebar"] + section,
+div[data-testid="stVerticalBlock"],
+div[data-testid="stHorizontalBlock"],
+.block-container,
+div[data-testid="stBlock"] {
+    background-color: #FAF7F4 !important;
 }
 
-footer, #MainMenu { visibility: hidden !important; }
-
-/* 侧边栏 — 暖奶油色 */
+/* ── 3. 侧边栏：奶油底色 × 独立配色 ── */
 [data-testid="stSidebar"] {
-    background-color: var(--sidebar-bg) !important;
-    border-right: 1px solid var(--border) !important;
+    background-color: #F5F0EB !important;
+    border-right: 1px solid #EDE3DA !important;
 }
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] > div:first-child {
+    background-color: #F5F0EB !important;
+}
 [data-testid="stSidebar"] p,
-[data-testid="stSidebar"] span {
-    color: var(--text) !important;
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] div {
+    color: #3D2C1E !important;
 }
-[data-testid="stSidebar"] .stCaption {
-    color: var(--text-muted) !important;
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] small {
+    color: #8C7268 !important;
 }
 [data-testid="stSidebar"] hr {
-    border-color: var(--border) !important;
+    border-color: #EDE3DA !important;
 }
 
-/* 聊天消息 */
-.stChatMessage {
+/* ── 4. 聊天消息：白色气泡 + 软边 ── */
+[data-testid="stChatMessage"] {
+    background: #FFFFFF !important;
+    border: 1px solid #EDE3DA !important;
     border-radius: 18px !important;
-    padding: 14px 18px !important;
-    margin-bottom: 10px !important;
-}
-.stChatMessage[data-testid="stChatMessage"] {
-    background: var(--card-bg) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: 0 2px 8px rgba(180,140,110,0.07) !important;
+    box-shadow: none !important;
 }
 
-/* 按钮 */
+/* ── 5. 按钮柔和化 ── */
 .stButton > button {
     border-radius: 14px !important;
+    border: 1px solid #EDE3DA !important;
+    background: #FFFFFF !important;
+    color: #3D2C1E !important;
     font-weight: 500 !important;
-    border: 1px solid var(--border) !important;
-    background: var(--card-bg) !important;
-    color: var(--text) !important;
-    transition: all 0.2s ease !important;
+    box-shadow: none !important;
 }
 .stButton > button:hover {
-    background: var(--primary-pale) !important;
-    border-color: var(--primary-light) !important;
-    color: var(--primary) !important;
+    background: #FDF0E8 !important;
+    border-color: #C17B4A !important;
+    color: #C17B4A !important;
 }
 
-/* 输入框 */
-.stTextInput input, .stTextArea textarea {
+/* ── 6. 文件上传：虚线框 + 居中 ── */
+[data-testid="stFileUploader"] {
+    background: #FFFFFF !important;
+    border: 1.5px dashed #D4C8BC !important;
+    border-radius: 16px !important;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: #C17B4A !important;
+}
+[data-testid="stFileUploader"] button {
+    background: #FFFFFF !important;
+    border: 1px solid #EDE3DA !important;
+    color: #3D2C1E !important;
+    border-radius: 10px !important;
+}
+[data-testid="stFileUploader"] button:hover {
+    background: #FDF0E8 !important;
+    border-color: #C17B4A !important;
+}
+
+/* ── 7. 输入框 ── */
+input[type="text"],
+textarea,
+[data-testid="stChatInput"] textarea {
     border-radius: 14px !important;
-    border: 1px solid var(--border) !important;
-    background: var(--card-bg) !important;
+    border: 1px solid #EDE3DA !important;
+    background: #FFFFFF !important;
+    color: #3D2C1E !important;
+}
+[data-testid="stChatInput"] textarea {
+    border-radius: 16px !important;
 }
 
-/* 提示框柔化 */
-.stSuccess, .stInfo, .stWarning, .stError {
+/* ── 8. 分割线 / 提示框 / 展开 ── */
+hr, .stDivider {
+    border-color: #EDE3DA !important;
+}
+.stAlert,
+[data-testid="stExpander"] details {
     border-radius: 14px !important;
 }
-
-/* 标签 Chip 样式 */
-.style-chip {
-    display: inline-block;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 6px 16px;
-    font-size: 13px;
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.18s;
-    margin: 4px;
-}
-.style-chip:hover {
-    background: var(--primary-pale);
-    border-color: var(--primary-light);
-    color: var(--primary);
+[data-testid="stExpander"] details {
+    border: 1px solid #EDE3DA !important;
 }
 
-/* 推荐卡片 */
-.rec-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 14px;
-    box-shadow: 0 2px 12px rgba(180,140,110,0.06);
-}
+/* ── 9. 滚动条 ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #FAF7F4; }
+::-webkit-scrollbar-thumb { background: #D1C4B6; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #B0A098; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -184,12 +188,15 @@ footer, #MainMenu { visibility: hidden !important; }
 # Session State 初始化
 # ============================================================
 def init_session():
+    # 自动检测运行模式：有 API Key 且 LangChain 可用 → Agent，否则 → Mock
+    if "mode" not in st.session_state:
+        st.session_state.mode = _detect_mode()
+
     defaults = {
         "messages": [],
         "face_report": None,
         "last_recommendations": None,
         "uploaded_image_path": None,
-        "mode": "mock",
         "agent_executor": None,
         "tryon_results": {},
         "pending_tryon": None,
@@ -197,6 +204,13 @@ def init_session():
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
+
+
+def _detect_mode() -> str:
+    """自动检测：有 DASHSCOPE_API_KEY 环境变量 且 LangChain 已安装 → agent，否则 mock"""
+    if DASHSCOPE_AVAILABLE and os.getenv("DASHSCOPE_API_KEY", "").strip():
+        return "agent"
+    return "mock"
 
 
 init_session()
@@ -251,7 +265,18 @@ def _on_photo_upload():
         elif report.face_shape is not None:
             shape = report.face_shape.value
             conf = report.confidence
-            st.session_state.face_report = {"face_shape": shape, "confidence": conf}
+            st.session_state.face_report = {
+                "face_shape": shape,
+                "confidence": conf,
+                "features": {
+                    "face_ratio": report.features.face_ratio,
+                    "jaw_cheek_ratio": report.features.jaw_cheek_ratio,
+                    "forehead_ratio": report.features.forehead_ratio,
+                    "eye_distance": report.features.eye_distance,
+                    "nose_type": report.features.nose_type,
+                    "chin_shape": report.features.chin_shape,
+                },
+            }
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": (
@@ -333,25 +358,29 @@ def render_sidebar():
 
         st.divider()
 
-        # 运行模式
-        st.markdown('<div style="font-size:12px; color:#8C7268; margin-bottom:6px;">运行模式</div>', unsafe_allow_html=True)
-        mode = st.radio(
-            "模式",
-            ["Mock（离线）", "Agent（需 Key）"],
-            index=0 if st.session_state.mode == "mock" else 1,
-            label_visibility="collapsed",
-        )
-        st.session_state.mode = "mock" if "Mock" in mode else "agent"
-
-        if st.session_state.mode == "agent":
+        # API Key（可选，自动降级 Mock）
+        with st.expander("⚙ 高级设置", expanded=False):
             api_key = st.text_input(
-                "OpenAI API Key",
+                "阿里云百炼 API Key",
                 type="password",
-                value=os.getenv("OPENAI_API_KEY", ""),
+                value=os.getenv("DASHSCOPE_API_KEY", ""),
                 placeholder="sk-...",
+                label_visibility="collapsed",
             )
             if api_key:
-                os.environ["OPENAI_API_KEY"] = api_key
+                os.environ["DASHSCOPE_API_KEY"] = api_key
+                if DASHSCOPE_AVAILABLE:
+                    st.session_state.mode = "agent"
+                    st.caption("已启用 通义千问 Agent")
+                else:
+                    st.caption("未安装 dashscope，使用 Mock 模式")
+            else:
+                if st.session_state.mode == "agent":
+                    st.session_state.mode = "mock"
+                if DASHSCOPE_AVAILABLE:
+                    st.caption("未设置 Key，使用 Mock 模式")
+                else:
+                    st.caption("未安装 dashscope，使用 Mock 模式")
 
         st.divider()
 
@@ -705,11 +734,11 @@ def run_langchain_agent(prompt: str, image_path: str = None) -> str:
                 ),
             ]
 
-            from langchain_openai import ChatOpenAI
+            from langchain_community.chat_models import ChatTongyi
             from langchain.agents import create_react_agent, AgentExecutor
             from langchain import hub
 
-            llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7)
+            llm = ChatTongyi(model="qwen-plus", temperature=0.7)
             agent = create_react_agent(llm, tools, SYSTEM_PROMPT)
             st.session_state.agent_executor = AgentExecutor(
                 agent=agent, tools=tools, verbose=True, handle_parsing_errors=True,
